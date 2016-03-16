@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>PHP5 Authentication by 7h1nk3r</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">PHP5 Authentication</h1>
+      <h2 class="project-tagline"></h2>
+      <a href="https://github.com/7h1nk3r/Authentication-Tutorial" class="btn">View on GitHub</a>
+      <a href="https://github.com/7h1nk3r/Authentication-Tutorial/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/7h1nk3r/Authentication-Tutorial/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="php5-password-encryption-tutorial" class="anchor" href="#php5-password-encryption-tutorial" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>PHP5 PASSWORD ENCRYPTION TUTORIAL</h1>
+
+<h2>
+<a id="why-hashing" class="anchor" href="#why-hashing" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Why hashing?</h2>
+
+<p>If you ever consider publishing your database online, you should be aware that a time will come when it will be compromised in a way. When a time like that comes, the last thing anyone wants is all the data stored in database to be clearly visible. You should aim to hash at least passwords if not all of the personal data (this may have an impact on performance and loading speed). 
+By applying a hashing algorithm to your data before storing it into a database, it is practically impossible for them to be compromised even if the database is hacked. At the same time this data can be recovered by you as easily as it was secured. However, this only secures data from being accessed through database and not in other places in your code where you might be using it to perform various actions. 
+Encrypting passwords using MD5() or similar algorithms may seem like a good idea due to their speed and efficiency - and to some extent it works great, but the process is reversible and can be “brute-forced” very easily; therefore, you should avoid securing sensitive data through these kinds of algorithms.
+Two rules of thumb you should always follow:</p>
+
+<ul>
+<li>  DON’T save passwords as plain text</li>
+<li>  DON’T try to invent your own password security (unless you are a security expert)</li>
+</ul>
+
+<h2>
+<a id="hashing-using-phps-crypt-function" class="anchor" href="#hashing-using-phps-crypt-function" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Hashing using PHP’s crypt() function</h2>
+
+<p>Bcrypt is a popular way of hashing and is cryptographically very strong. To make passwords harder to break, have them follow the following constrains:</p>
+
+<ul>
+<li>  Use a different salt for each password</li>
+<li>  Limit the number of failed login attempts</li>
+<li>  Make the user includes special characters</li>
+<li>  Require passwords of a greater length (e.g. &gt;= 7 char)</li>
+</ul>
+
+<p>Following these principles makes any attacks extremely unlikely to obtain sensitive data
+Salting is a process of appending characters to a sequence of characters (e.g. a string “iLovePHP” would become “iLovePHP12jnt3v23” after salting it with “12jnt3v23”. The new string is what we call a salt.</p>
+
+<p>1.) First, we need to hash the user’s password obtained from the server</p>
+
+<pre><code>&lt;?php
+$username = ‘user’;
+/*
+Obviously password will not appear in your code like this, but it is shown here for the sake of clarity
+*/
+$password = ‘iloveapples!’;  
+
+//Create a random salt – the “randomer” the better
+$salt = strstr(base64_encode(mcrypt_create_iv(16, MCRYPT_DEV_URANDOM)), ‘+’, ‘.’);
+
+/*
+Now we prefix hash information, which will let php know how to verify the password. 
+The first parameter describes the algorithm we are using, more can be found on php5’s crypt() function tutorial
+The second parameter represents the option for the hashing algorithm – basically means the level of security
+*/
+
+$salt = sprint(“$2a$%02d$”, 10).$salt;
+
+//All we need to do now is use the crypt function and the password is hashed
+$hash = crypt($password, $salt);
+?&gt; 
+</code></pre>
+
+<p><em>IMPORTANT!</em>
+As mentioned earlier, hashing is irreversible; therefore in order to verify the password, you must store the hash and the salt you have used with the password in the same row in your database. If you don’t, you will not be able to validate it. </p>
+
+<p>This wasn’t too bad was it? We now have a very secure password that can be stored in our database. Hint: you store $has in your database as the user’s password
+But how do we validate the password?! </p>
+
+<p>2.) In the second example we will take a look at how we validate a hashed password. What we need to do first is obtain the password, it’s salt, and hash from your database (tutorial on how to connect with databases can be found here).  Then you need to salt the password again and use the same hashing function. If the result matches, the password is validated.</p>
+
+<pre><code>//Here goes your code for accessing your database and obtaining user’s info
+$username = ‘user’;
+
+//Again, password is displayed here just for the sake of clarity
+$password = ‘iloveapples!’;
+
+//Obtain hash associated with the user
+$hash = $db -&gt; prepare(‘SELECT hash FROM users WHERE username = :username LIMIT 1’);
+
+//Bind it to the password
+$temp -&gt; bindParam(‘:username’, $username);
+
+$temp-&gt;execute();
+
+//Obtain anonymous object
+$user = $temp -&gt; fetch(PDO::FETCH_OBJ);
+
+//Hash again and see if the hashes match; if they do the password is valid!
+if( hash_equals($user -&gt; hash, crypt($password, $user-&gt;hash)) ){
+    //Password is correct, yay!
+}
+</code></pre>
+
+<p>As you can see PHP enables us to make a bulletproof vest for our users’ passwords that is very easy to implement. Following the guidelines of this tutorial should help you with anxiety of losing sensitive data. However, hashing DOES NOT prevent from attacks from happening, nor does it prevent breaches into your database; but that is another battle for another day. </p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/7h1nk3r/Authentication-Tutorial">PHP5 Authentication</a> is maintained by <a href="https://github.com/7h1nk3r">7h1nk3r</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
